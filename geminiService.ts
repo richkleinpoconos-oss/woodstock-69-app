@@ -19,8 +19,9 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 3, delay = 2000): Pr
 
 export const editImageWithGemini = async (base64Image: string, prompt: string): Promise<string> => {
   return withRetry(async () => {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    const mimeType = base64Image.match(/data:([^;]+);/)?.[1] || 'image/png';
+    apiKey: import.meta.env.VITE_GEMINI_API_KEY 
+});  apiKey: import.meta.env.VITE_GEMINI_API_KEY 
+});    const mimeType = base64Image.match(/data:([^;]+);/)?.[1] || 'image/png';
     const cleanBase64 = base64Image.replace(/^data:image\/\w+;base64,/, "");
 
     const response = await ai.models.generateContent({
