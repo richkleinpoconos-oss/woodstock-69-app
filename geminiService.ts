@@ -19,9 +19,10 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 3, delay = 2000): Pr
 
 export const editImageWithGemini = async (base64Image: string, prompt: string): Promise<string> => {
   return withRetry(async () => {
-    apiKey: import.meta.env.VITE_GEMINI_API_KEY 
-});  apiKey: import.meta.env.VITE_GEMINI_API_KEY 
-});    const mimeType = base64Image.match(/data:([^;]+);/)?.[1] || 'image/png';
+    // FIXED: Now uses the Vercel variable properly
+    const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
+    
+    const mimeType = base64Image.match(/data:([^;]+);/)?.[1] || 'image/png';
     const cleanBase64 = base64Image.replace(/^data:image\/\w+;base64,/, "");
 
     const response = await ai.models.generateContent({
@@ -45,7 +46,8 @@ export const editImageWithGemini = async (base64Image: string, prompt: string): 
 
 export const generateWoodstockVideo = async (prompt: string): Promise<string> => {
   return withRetry(async () => {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    // FIXED: Now uses the Vercel variable properly
+    const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
     
     let operation = await ai.models.generateVideos({
       model: 'veo-3.1-fast-generate-preview',
@@ -65,7 +67,8 @@ export const generateWoodstockVideo = async (prompt: string): Promise<string> =>
     const downloadLink = operation.response?.generatedVideos?.[0]?.video?.uri;
     if (!downloadLink) throw new Error("Video generation failed or timed out.");
     
-    const response = await fetch(`${downloadLink}&key=${process.env.API_KEY}`);
+    // FIXED: Also updated the fetch URL to use the Vercel variable
+    const response = await fetch(`${downloadLink}&key=${import.meta.env.VITE_GEMINI_API_KEY}`);
     if (!response.ok) throw new Error(`Failed to fetch video file: ${response.statusText}`);
     const blob = await response.blob();
     return URL.createObjectURL(blob);
@@ -74,7 +77,8 @@ export const generateWoodstockVideo = async (prompt: string): Promise<string> =>
 
 export const generateRadioBroadcast = async (text: string): Promise<Uint8Array> => {
   return withRetry(async () => {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    // FIXED: Now uses the Vercel variable properly
+    const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
     
     const prompt = `Simulate a 1969 radio news report from Woodstock. 
     Speaker Joe is an older news anchor in a studio, Speaker Jane is a young field reporter in the rain.
