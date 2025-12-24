@@ -1,16 +1,21 @@
-import React, { useState, useCallback, useRef, useMemo, useEffect } from 'react';
-import { WOODSTOCK_ARTISTS, WOODSTOCK_PRODUCERS, WOODSTOCK_FILM, WOODSTOCK_LOGISTICS, WOODSTOCK_MODERN_LEGACY, WOODSTOCK_PHOTOGRAPHERS, WOODSTOCK_REUNION } from './constants';
-import { Artist, ImageState, Producer } from './types';
+import React, { useState, useRef, useMemo } from 'react';
+import { WOODSTOCK_ARTISTS, WOODSTOCK_PRODUCERS, WOODSTOCK_LOGISTICS, WOODSTOCK_MODERN_LEGACY, WOODSTOCK_PHOTOGRAPHERS, WOODSTOCK_REUNION } from './constants';
+import { Artist } from './types';
 
+// Removed: import { editImageWithGemini } ...
+// Removed: ImageState, Producer imports (if not used elsewhere, otherwise keep Producer)
 
 const App: React.FC = () => {
   const [selectedArtist, setSelectedArtist] = useState<Artist>(WOODSTOCK_ARTISTS[0]);
-      const aistudio = (window as any).aistudio;
-    if (aistudio) {
-      await aistudio.openSelectKey();
-      setHasKey(true);
-    }
-  };
+  
+  // REPLACED: Simple state for just showing the uploaded image
+  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const archiveRef = useRef<HTMLDivElement>(null);
+
+  // REMOVED: All useEffects for API keys and handleOpenKey
+  // REMOVED: handleEditImage function
 
   const handleArtistChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const artist = WOODSTOCK_ARTISTS.find(a => a.id === e.target.value);
@@ -22,21 +27,6 @@ const App: React.FC = () => {
     archiveRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
-  const handleEditImage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!imageState.original || !prompt.trim()) return;
-    setImageState(prev => ({ ...prev, isProcessing: true, error: null }));
-    try {
-      const result = await editImageWithGemini(imageState.original, prompt);
-      setImageState(prev => ({ ...prev, edited: result, isProcessing: false }));
-    } catch (err: any) {
-      const msg = err.message?.includes("500") 
-        ? "The server encountered an issue. We tried retrying, but it's still failing. Please try a simpler prompt or wait a few minutes."
-        : err.message;
-      setImageState(prev => ({ ...prev, isProcessing: false, error: msg }));
-    }
-  };
-
   const dayGroupedArtists = useMemo(() => {
     return [1, 2, 3].map(day => ({
       day,
@@ -45,33 +35,7 @@ const App: React.FC = () => {
     }));
   }, []);
 
-  if (!hasKey) {
-    return (
-      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 text-center">
-        <div className="max-w-md space-y-8">
-          <h1 className="woodstock-font text-6xl text-orange-500 mb-4">Woodstock '69</h1>
-          <p className="text-slate-300 text-lg leading-relaxed">
-            Welcome to the digital archive. To access interactive AI features like image generation and archival studio tools, please select your Google AI Studio API key.
-          </p>
-          <div className="space-y-4">
-            <button 
-              onClick={handleOpenKey}
-              className="w-full bg-orange-600 hover:bg-orange-500 text-white font-bold py-4 px-8 rounded-xl shadow-2xl transition-all transform hover:scale-105"
-            >
-              Select API Key
-            </button>
-            <p className="text-slate-500 text-xs">
-              A paid GCP project with billing enabled is required for advanced Gemini models.
-              <br />
-              <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noopener noreferrer" className="underline hover:text-orange-400">
-                View Billing Documentation
-              </a>
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // REMOVED: The "if (!hasKey)" return block (Login Screen)
 
   return (
     <div className="min-h-screen pb-40 bg-slate-950 text-slate-100 overflow-x-hidden">
@@ -144,25 +108,24 @@ const App: React.FC = () => {
           </section>
         </div>
 
+        {/* REPLACED SECTION: Simplified Photo Upload Frame */}
         <div className="lg:col-span-5 space-y-8">
           <section className="bg-slate-900/50 p-6 rounded-2xl border border-white/5 backdrop-blur-sm shadow-xl sticky top-8">
             <h2 className="text-2xl font-bold mb-6 flex items-center gap-3">
-              <span className="text-3xl">✨</span> Promo for Woodstock
+              <span className="text-3xl">✨</span> Woodstock Memory
             </h2>
             <p className="text-slate-400 mb-6 text-sm">
-              Upload a photo to create your own festival promo poster using Gemini.
+              Upload your own photo to place it in the digital archive frame.
             </p>
 
             <div className="space-y-4">
               <div className="relative group aspect-[2/3] max-w-sm mx-auto bg-slate-800 rounded-xl overflow-hidden border-2 border-dashed border-slate-700 flex flex-col items-center justify-center transition-colors hover:border-orange-500/50">
-                {imageState.edited ? (
-                  <img src={imageState.edited} alt="Edited result" className="w-full h-full object-cover" />
-                ) : imageState.original ? (
-                  <img src={imageState.original} alt="Original" className="w-full h-full object-cover" />
+                {uploadedImage ? (
+                  <img src={uploadedImage} alt="User upload" className="w-full h-full object-cover" />
                 ) : (
                   <div className="text-center p-8">
                     <div className="text-4xl mb-4">📸</div>
-                    <p className="text-slate-400">Click to upload image</p>
+                    <p className="text-slate-400">Click to upload photo</p>
                     <p className="text-[10px] text-slate-500 mt-2 uppercase">Vertical Aspect 2:3</p>
                   </div>
                 )}
@@ -173,7 +136,7 @@ const App: React.FC = () => {
                     const file = e.target.files?.[0];
                     if (file) {
                       const reader = new FileReader();
-                      reader.onloadend = () => setImageState(prev => ({ ...prev, original: reader.result as string, edited: null, error: null }));
+                      reader.onloadend = () => setUploadedImage(reader.result as string);
                       reader.readAsDataURL(file);
                     }
                   }}
@@ -181,32 +144,14 @@ const App: React.FC = () => {
                   className="absolute inset-0 opacity-0 cursor-pointer"
                 />
               </div>
-
-              {imageState.error && (
-                <div className="p-4 bg-red-900/30 border border-red-500/50 rounded-lg text-xs text-red-200">
-                  ⚠️ {imageState.error}
-                </div>
-              )}
-
-              {imageState.original && (
-                <form onSubmit={handleEditImage} className="space-y-4">
-                  <input
-                    type="text"
-                    value={prompt}
-                    onChange={(e) => setPrompt(e.target.value)}
-                    placeholder="e.g. Turn this into a vintage 1969 poster..."
-                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:border-orange-500 outline-none transition-all"
-                  />
-                  <button
-                    type="submit"
-                    disabled={imageState.isProcessing || !prompt.trim()}
-                    className={`w-full py-3 rounded-lg font-bold transition-all shadow-lg ${
-                      imageState.isProcessing ? 'bg-slate-700 cursor-wait' : 'bg-orange-600 hover:bg-orange-500'
-                    }`}
-                  >
-                    {imageState.isProcessing ? 'Communicating with the Cosmos...' : 'Generate Poster'}
-                  </button>
-                </form>
+              
+              {uploadedImage && (
+                <button
+                  onClick={() => setUploadedImage(null)}
+                  className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-400 text-xs rounded-lg transition-colors uppercase tracking-widest"
+                >
+                  Remove Photo
+                </button>
               )}
             </div>
           </section>
@@ -404,7 +349,7 @@ const App: React.FC = () => {
 
       <footer className="fixed bottom-0 left-0 right-0 bg-slate-900/90 backdrop-blur-md border-t border-white/5 py-4 px-6 z-40">
         <div className="max-w-6xl mx-auto flex justify-between items-center">
-          <p className="text-slate-400 text-sm">Explore the legend & bull; Woodstock 1969 Archive</p>
+          <p className="text-slate-400 text-sm">Explore the legend &bull; Woodstock 1969 Archive</p>
           <div className="flex gap-4">
              <span className="text-xs bg-orange-950/50 text-orange-400 px-3 py-1 rounded-full border border-orange-500/20">Peace ☮️</span>
              <span className="text-xs bg-yellow-950/50 text-yellow-400 px-3 py-1 rounded-full border border-yellow-500/20">Love ❤️</span>
