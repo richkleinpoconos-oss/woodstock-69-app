@@ -1,36 +1,11 @@
 import React, { useState, useCallback, useRef, useMemo, useEffect } from 'react';
 import { WOODSTOCK_ARTISTS, WOODSTOCK_PRODUCERS, WOODSTOCK_FILM, WOODSTOCK_LOGISTICS, WOODSTOCK_MODERN_LEGACY, WOODSTOCK_PHOTOGRAPHERS, WOODSTOCK_REUNION } from './constants';
 import { Artist, ImageState, Producer } from './types';
-import { editImageWithGemini } from './geminiService';
+
 
 const App: React.FC = () => {
   const [selectedArtist, setSelectedArtist] = useState<Artist>(WOODSTOCK_ARTISTS[0]);
-  const [imageState, setImageState] = useState<ImageState>({
-    original: null,
-    edited: null,
-    isProcessing: false,
-    error: null,
-  });
-  const [prompt, setPrompt] = useState('');
-  
-  const [hasKey, setHasKey] = useState(false);
-
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const archiveRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const checkKey = async () => {
       const aistudio = (window as any).aistudio;
-      if (aistudio) {
-        const has = await aistudio.hasSelectedApiKey();
-        setHasKey(has);
-      }
-    };
-    checkKey();
-  }, []);
-
-  const handleOpenKey = async () => {
-    const aistudio = (window as any).aistudio;
     if (aistudio) {
       await aistudio.openSelectKey();
       setHasKey(true);
